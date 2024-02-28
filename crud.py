@@ -16,6 +16,7 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
 	except:
 		print(traceback.format_exc())
 		return 'error'
+
 def get_user_by_id(db: Session, pk: int):
 	try:
 		user = db.query(Users).filter(Users.id == pk).first()
@@ -26,19 +27,13 @@ def get_user_by_id(db: Session, pk: int):
 	except:
 		print(traceback.format_exc())
 		return 'error'
-def create_user( request: UserSchema,db: Session):
+	
+def create_user(db: Session, request: UserSchema):
 	try:
-		print(request.id)
+		data = request.model_dump()
+		print(data)
 		user = Users(
-					id = request.id, 
-					first_name = request.first_name,
-					last_name = request.last_name,
-					age = request.age,
-					city = request.city,
-					state = request.state,
-					zip = request.zip,
-					email = request.email,
-					web = request.web
+					**data
 					)
 		db.add(user)
 		db.commit()
@@ -50,9 +45,13 @@ def create_user( request: UserSchema,db: Session):
 
 def remove_user(db: Session, pk: int):
 	try:	
-		user = get_user_by_id(db=db, id=pk)
-		db.delete(user)
-		db.commit()
+		user = get_user_by_id(db=db, pk=pk)
+		if user:
+			db.delete(user)
+			db.commit()
+			db.refresh(user)
+		else:
+			return 'error'
 	except:
 		print(traceback.format_exc())
 		return 'error'

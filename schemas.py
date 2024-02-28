@@ -1,7 +1,7 @@
 #  from pydantic
-from pydantic import BaseModel, Field, EmailStr, validator
+from pydantic import BaseModel, Field, validator
 import pydantic
-from typing import List, Optional, TypeVar, Generic
+from typing import List, Optional, TypeVar, Generic, Union
 T = TypeVar('T')
 
 class UserSchema(BaseModel):
@@ -13,7 +13,7 @@ class UserSchema(BaseModel):
 	city : str
 	state : str
 	zip : int
-	email : EmailStr
+	email : str
 	web : Optional[str] = None
 
 	@validator('id')
@@ -22,11 +22,14 @@ class UserSchema(BaseModel):
 			raise ValueError(f"id must be positive: {value}")
 		return value	
 	class Config:
-		orm_mode = True
+		from_attributes = True
 
 
-class Response(pydantic.BaseModel,Generic[T]):
-	code: str
-	status: str
-	message: str
-	result: UserSchema
+class Response(pydantic.BaseModel):
+    code: str
+    status: str
+    message: str
+    result: Union[List[UserSchema], UserSchema, str, None] 
+
+    class Config:
+        from_attributes = True
