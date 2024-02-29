@@ -20,7 +20,7 @@ def get_db():
 
 
 @router.post("/create", response_model=Response)
-def createuser_service(request: UserSchema, db: Session = Depends(get_db)):
+def createuser_service(request: List[UserSchema], db: Session = Depends(get_db)):
     result = crud.create_user(db, request)
 
     if result == 'error':

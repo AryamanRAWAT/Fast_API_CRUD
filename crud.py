@@ -1,4 +1,5 @@
 # from local
+from typing import List
 from fastapi import HTTPException
 from models import Users
 from schemas import UserSchema
@@ -28,17 +29,20 @@ def get_user_by_id(db: Session, pk: int):
 		print(traceback.format_exc())
 		return 'error'
 	
-def create_user(db: Session, request: UserSchema):
+def create_user(db: Session, request: List[UserSchema]):
 	try:
-		data = request.model_dump()
-		print(data)
-		user = Users(
-					**data
-					)
-		db.add(user)
-		db.commit()
-		db.refresh(user)
-		return user
+		users = []
+		print(request)
+		for entry in request:
+			data = entry.model_dump()
+			user = Users(
+						**data
+						)
+			db.add(user)
+			db.commit()
+			db.refresh(user)
+			users.append(user)
+		return users
 	except:
 		print(traceback.format_exc())
 		return 'error'
