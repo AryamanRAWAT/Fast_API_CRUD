@@ -23,7 +23,7 @@ def get_db():
 def createuser_service(request: List[UserSchema], db: Session = Depends(get_db)):
     result = crud.create_user(db, request)
 
-    if result == 'error':
+    if result == None:
         return Response(status="Error", code="500", message="Failed to create user", result=None)
     else:
         return Response(status="Ok", code="200", message="User created successfully", result=result)
@@ -31,7 +31,7 @@ def createuser_service(request: List[UserSchema], db: Session = Depends(get_db))
 
 @router.get("/{id:int}", response_model=Response)
 def get(id: int, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    user = crud.get_user_by_id(db, id)
+    user = crud.get_user_by_id(db, id, skip, limit)
     return Response(status="Ok", code="200", message="Success fetch user by ID", result=user)
 
 
@@ -49,10 +49,16 @@ def get(skip: int = 0, limit: int = 100, name: str=None, sort: str='id', db: Ses
 @router.patch("/update/{id:int}")
 def updateuser(id: int, request: UserSchema, db: Session = Depends(get_db)):
     user = crud.update_user(db, pk=id, user_data=request.model_dump())
-    return Response(status="Ok", code="200", message="Success update data", result=user)
+    if user == None:
+        return Response(status="Error", code="404", message="User Not Found", result=None)
+    else:
+        return Response(status="Ok", code="200", message="Success update data", result=user)
 
 
 @router.delete("/delete/{id:int}")
 def deleteuser(id:int, db: Session = Depends(get_db)):
-    crud.remove_user(db, pk=id)
-    return Response(status="Ok", code="200", message="Success! Deleted the data", result=None)
+    user=crud.remove_user(db, pk=id)
+    if user == None:
+        return Response(status="Error", code="404", message="User Not Found", result=None)
+    else:
+        return Response(status="Ok", code="200", message="Success deleted data", result=None)

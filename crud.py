@@ -19,11 +19,12 @@ def get_users(db: Session, skip: int, limit: int, name: str, sort: str):
 			query = query.order_by(getattr(Users, sort[1:]).desc())
 		else:
 			query = query.order_by(sort)
-
+		query = query.offset(skip).limit(limit)
+		
 		return query
 	except:
 		print(traceback.format_exc())
-		raise HTTPException(status_code=500, detail="Internal Server Error")
+		raise HTTPException(status_code=404, detail="Users Not Found")
 
 def get_user_by_id(db: Session, pk: int):
 	# try:
@@ -52,7 +53,7 @@ def create_user(db: Session, request: List[UserSchema]):
 		return users
 	except:
 		print(traceback.format_exc())
-		raise HTTPException(status_code=500, detail="Internal Server Error")
+		return None
 
 def remove_user(db: Session, pk: int):
 	try:	
@@ -70,7 +71,7 @@ def update_user(db: Session, pk: int, user_data: dict):
 	try:
 		user = db.query(Users).filter(Users.id == pk).first()
 		if not user:
-			raise HTTPException(status_code=404, detail="User not found")
+			return None
 
 		for key, value in user_data.items():
 			setattr(user, key, value)
