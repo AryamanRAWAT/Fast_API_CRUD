@@ -1,4 +1,5 @@
 # from local
+from typing import List
 from fastapi import HTTPException
 from models import Users
 from schemas import UserSchema
@@ -8,40 +9,51 @@ import traceback
 from sqlalchemy.orm import Session
 
 
-def get_users(db: Session, skip: int = 0, limit: int = 100):
+def get_users(db: Session, skip: int, limit: int, name: str, sort: str):
 	try:
-		users = db.query(Users).offset(skip).limit(limit).all()
-		print(users, type(users))
-		return users
+		query = db.query(Users)
+		if name:
+			query = query.filter((Users.first_name.ilike(f"%{name}%")) | (Users.last_name.ilike(f"%{name}%")))
+
+		if sort[0]=="-":       
+			query = query.order_by(getattr(Users, sort[1:]).desc())
+		else:
+			query = query.order_by(sort)
+		query = query.offset(skip).limit(limit)
+		
+		return query
 	except:
 		print(traceback.format_exc())
-		return 'error'
+		raise HTTPException(status_code=404, detail="Users Not Found")
 
 def get_user_by_id(db: Session, pk: int):
-	try:
+	# try:
 		user = db.query(Users).filter(Users.id == pk).first()
 		if user:
 			return user
 		else:
 			raise HTTPException(status_code=404, detail="User not found")
-	except:
-		print(traceback.format_exc())
-		return 'error'
+	# except:
+	# 	print(traceback.format_exc())
+	# 	raise HTTPException(status_code=500, detail="Internal Server Error")
 	
-def create_user(db: Session, request: UserSchema):
+def create_user(db: Session, request: List[UserSchema]):
 	try:
-		data = request.model_dump()
-		print(data)
-		user = Users(
-					**data
-					)
-		db.add(user)
-		db.commit()
-		db.refresh(user)
-		return user
+		users = []
+		print(request)
+		for entry in request:
+			data = entry.model_dump()
+			user = Users(
+						**data
+						)
+			db.add(user)
+			db.commit()
+			db.refresh(user)
+			users.append(user)
+		return users
 	except:
 		print(traceback.format_exc())
-		return 'error'
+		return None
 
 def remove_user(db: Session, pk: int):
 	try:	
@@ -49,19 +61,17 @@ def remove_user(db: Session, pk: int):
 		if user:
 			db.delete(user)
 			db.commit()
-			db.refresh(user)
 		else:
-			return 'error'
+			return None
 	except:
 		print(traceback.format_exc())
-		return 'error'
-
+		raise HTTPException(status_code=500, detail="Internal Server Error")
 
 def update_user(db: Session, pk: int, user_data: dict):
 	try:
 		user = db.query(Users).filter(Users.id == pk).first()
 		if not user:
-			raise HTTPException(status_code=404, detail="User not found")
+			return None
 
 		for key, value in user_data.items():
 			setattr(user, key, value)
@@ -71,4 +81,4 @@ def update_user(db: Session, pk: int, user_data: dict):
 		return user
 	except:
 		print(traceback.format_exc())
-		return 'error'
+		raise HTTPException(status_code=500, detail="Internal Server Error")

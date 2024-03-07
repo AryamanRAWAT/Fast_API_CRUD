@@ -20,47 +20,45 @@ def get_db():
 
 
 @router.post("/create", response_model=Response)
-def createuser_service(request: UserSchema, db: Session = Depends(get_db)):
+def createuser_service(request: List[UserSchema], db: Session = Depends(get_db)):
     result = crud.create_user(db, request)
 
-    if result == 'error':
+    if result == None:
         return Response(status="Error", code="500", message="Failed to create user", result=None)
     else:
         return Response(status="Ok", code="200", message="User created successfully", result=result)
 
 
 @router.get("/{id:int}", response_model=Response)
-def get(id: Optional[int] = None, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    if id is not None:
-        user = crud.get_user_by_id(db, id)
-        if user is None:
-            return Response(status="Error", code="404", message="User not found", result=None)
-        else:
-            return Response(status="Ok", code="200", message="Success fetch user by ID", result=user)
-    else:
-        users = crud.get_users(db, skip, limit)
-        user_dicts = [user.dict() for user in users]
-        return Response(status="Ok", code="200", message="Success fetched data", result=user_dicts)
+def get(id: int, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    user = crud.get_user_by_id(db, id, skip, limit)
+    return Response(status="Ok", code="200", message="Success fetch user by ID", result=user)
 
 
 @router.get("/", response_model=Response)
-def get(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-        users = crud.get_users(db, skip, limit)
-        user_dicts = [user for user in users]
-        print(user_dicts)
-        return Response(status="Ok", code="200", message="Success fetch all data", result=user_dicts)
+def get(skip: int = 0, limit: int = 100, name: str=None, sort: str='id', db: Session = Depends(get_db)):
+        users = crud.get_users(db, skip, limit, name , sort)
+        if users:
+            user_dicts = [user for user in users]
+            print(user_dicts)
+            return Response(status="Ok", code="200", message="Success fetch all data", result=user_dicts)
+        else:
+            return Response(status="Error", code="404", message="User not found", result=None)
 
 # no partial update at the moment
 @router.patch("/update/{id:int}")
 def updateuser(id: int, request: UserSchema, db: Session = Depends(get_db)):
     user = crud.update_user(db, pk=id, user_data=request.model_dump())
-    return Response(status="Ok", code="200", message="Success update data", result=user)
+    if user == None:
+        return Response(status="Error", code="404", message="User Not Found", result=None)
+    else:
+        return Response(status="Ok", code="200", message="Success update data", result=user)
 
 
 @router.delete("/delete/{id:int}")
 def deleteuser(id:int, db: Session = Depends(get_db)):
-    de = crud.remove_user(db, pk=id)
-    if de != 'erro':
-        return Response(status="Ok", code="200", message="Success! Deleted the data", result=None)
+    user=crud.remove_user(db, pk=id)
+    if user == None:
+        return Response(status="Error", code="404", message="User Not Found", result=None)
     else:
-        return 'Error'
+        return Response(status="Ok", code="200", message="Success deleted data", result=None)
